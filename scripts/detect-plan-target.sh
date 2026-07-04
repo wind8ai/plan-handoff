@@ -9,16 +9,29 @@ PLAN_ROOT=""
 SOURCE=""
 NEEDS_BOOTSTRAP=0
 
-if [[ -f AGENTS.md ]]; then
-  if grep -qE 'plans/NNN|plans/\[0-9\]|开计划|写计划|Plan 协议|plan-handoff' AGENTS.md 2>/dev/null; then
-    PLAN_ROOT="plans"
-    SOURCE="AGENTS.md"
+if [[ -f .plan-handoff.yaml ]]; then
+  pr="$(python3 -c "
+import pathlib
+try:
+    import yaml
+except ImportError:
+    yaml = None
+p = pathlib.Path('.plan-handoff.yaml')
+text = p.read_text(encoding='utf-8')
+if yaml:
+    data = yaml.safe_load(text) or {}
+    print(str(data.get('plan_root', '') or '').strip())
+else:
+    for line in text.splitlines():
+        line = line.strip()
+        if line.startswith('plan_root:'):
+            print(line.split(':', 1)[1].strip().strip('\"').strip(\"'\"))
+            break
+" 2>/dev/null || true)"
+  if [[ -n "$pr" ]]; then
+    PLAN_ROOT="$pr"
+    SOURCE=".plan-handoff.yaml"
   fi
-fi
-
-if [[ -z "$PLAN_ROOT" && -f plans/README.md ]]; then
-  PLAN_ROOT="plans"
-  SOURCE="plans/README.md"
 fi
 
 if [[ -z "$PLAN_ROOT" && -f .claude/settings.json ]]; then
@@ -35,10 +48,15 @@ print(d.lstrip('./'))
 fi
 
 if [[ -z "$PLAN_ROOT" ]]; then
-  if compgen -G 'plans/[0-9]*.md' >/dev/null 2>&1 || compgen -G 'plans/done/[0-9]*.md' >/dev/null 2>&1; then
-    PLAN_ROOT="plans"
-    SOURCE="existing plans/*.md"
-  fi
+  for candidate in plans; do
+    if compgen -G "${candidate}/[0-9]*.md" >/dev/null 2>&1 \
+      || compgen -G "${candidate}/done/[0-9]*.md" >/dev/null 2>&1 \
+      || [[ -d "${candidate}/done" ]]; then
+      PLAN_ROOT="$candidate"
+      SOURCE="existing ${candidate}/"
+      break
+    fi
+  done
 fi
 
 if [[ -z "$PLAN_ROOT" ]]; then

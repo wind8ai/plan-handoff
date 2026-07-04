@@ -20,7 +20,7 @@
 | 配置 | `.claude/settings.json` → `"plansDirectory": "./plans"` |
 | 交接目标 | 带项目编号的 `plans/NNN-<主题>.md` |
 
-**Agent 规则：** `plansDirectory` 会路由 Claude 的 plan 文件，但项目通常还要求 `NNN-` 编号和 `plans/done/` 归档。优先遵循 `AGENTS.md` 中的项目约定，而非随机文件名。
+**Agent 规则：** `plansDirectory` 会路由 Claude 的 plan 文件，但交接仍须 `NNN-` 编号并归档到 `<plan_root>/done/`。以 `detect-plan-target.sh` 输出为准。
 
 ## Qoder
 

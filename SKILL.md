@@ -2,11 +2,11 @@
 name: plan-handoff
 description: >-
   将 coding agent 在 plan 模式下的结论从会话内存强制落盘到仓库内 git 可追踪文件。
-  自动识别或初始化 plan 目录配置（AGENTS.md、plans/、Claude plansDirectory）。
+  自动识别或初始化 plan 目录（.plan-handoff.yaml、plans/、Claude plansDirectory）。
   触发：写计划、开 plan、plan 一下、规划、落 plan、plan handoff、交接 plan；
   或 plan 仅留在 host 临时目录（~/.cursor/plans/、会话草稿）时。
   不负责写 plan、拆 task——可与 writing-plans、grilling、planning-and-task-breakdown 组合，无相互依赖。
-version: 0.1.0
+version: 0.2.0
 ---
 
 # Plan Handoff — Plan 交接落盘
@@ -57,18 +57,17 @@ bash scripts/detect-plan-target.sh
 
 | 优先级 | 标记 | Plan 根目录 |
 |--------|------|-------------|
-| 1 | `AGENTS.md` — Plan 相关节 / §3.0 /「开计划」/`plans/NNN` | AGENTS 中指定的路径（默认 `plans/`） |
-| 2 | `plans/README.md` | `plans/` |
-| 3 | `.claude/settings.json` → `plansDirectory` | 相对仓库根的路径 |
-| 4 | 已有 `plans/[0-9]*.md` 或 `plans/done/` | `plans/` |
-| 5 | 无任何标记 | **初始化**（步骤 2）后使用 `plans/` |
+| 1 | `.plan-handoff.yaml` → `plan_root` | 配置值（默认 `plans`） |
+| 2 | `.claude/settings.json` → `plansDirectory` | 相对仓库根的路径 |
+| 3 | 已有 `plans/[0-9]*.md` 或 `plans/done/` | `plans/` |
+| 4 | 无任何标记 | **初始化**（步骤 2）后使用 `plans/` |
 
-grep 模式见 [references/config-markers.md](references/config-markers.md)。
+详见 [references/config-markers.md](references/config-markers.md)。
 
-**文件名约定**（除非 AGENTS 另有规定）：
+**文件名约定：**
 
-- 进行中：`plans/NNN-<kebab-主题>.md`（三位递增编号）
-- 已完成：`plans/done/NNN-<kebab-主题>.md`
+- 进行中：`<plan_root>/NNN-<kebab-主题>.md`（三位递增编号）
+- 已完成：`<plan_root>/done/NNN-<kebab-主题>.md`
 
 取下一个编号：
 
@@ -77,14 +76,18 @@ ls plans/done/ plans/[0-9]*.md 2>/dev/null | grep -oE '[0-9]{3}' | sort -n | tai
 # 末号 +1，补零至 3 位；若无则从 001 起
 ```
 
-### 步骤 2 — 初始化（仅当步骤 1 未发现配置）
+### 步骤 2 — 初始化（仅当 `NEEDS_BOOTSTRAP=1`）
 
-创建最小目录结构——**不要**发明项目专属的 plan 方法论：
+创建最小目录结构：
 
+```bash
+mkdir -p plans/done
 ```
-plans/
-├── README.md    # 说明：plan 文件在此；完整规范见 AGENTS.md（若后续补充）
-└── done/
+
+可选写入 `.plan-handoff.yaml`（非默认路径时推荐）：
+
+```yaml
+plan_root: plans
 ```
 
 若本仓使用 Claude Code，在 `.claude/settings.json` 中新增或合并：
@@ -94,8 +97,6 @@ plans/
   "plansDirectory": "./plans"
 }
 ```
-
-可选：在 `AGENTS.md` 末尾追加简短「Plan 交接」_stub（3–5 行：触发词 + `plans/NNN-*.md` + 归档到 `plans/done/`）。**不要**重写已有 AGENTS 内容。
 
 重新运行 `detect-plan-target.sh`，确认 `PLAN_ROOT=plans`。
 

@@ -1,24 +1,29 @@
-# Plan 落盘目标识别标记
+# Plan 落盘目标识别
 
-供 `scripts/detect-plan-target.sh` 及手动 fallback 使用。
+供 `scripts/detect-plan-target.sh` 及手动 fallback 使用。识别依据见下表。
 
-## AGENTS.md 模式
+## 检测优先级
 
-```bash
-grep -nE 'plans/NNN|开计划|写计划|Plan 协议|plan-handoff|plansDirectory' AGENTS.md 2>/dev/null
+| 优先级 | 标记 | Plan 根目录 |
+|--------|------|-------------|
+| 1 | `.plan-handoff.yaml` → `plan_root` | 配置值 |
+| 2 | `.claude/settings.json` → `plansDirectory` | 相对仓库根的路径 |
+| 3 | 已有 `plans/[0-9]*.md` 或 `plans/done/` | `plans/` |
+| 4 | 无信号 | bootstrap → `plans/`（见 SKILL 步骤 2） |
+
+## `.plan-handoff.yaml`（可选）
+
+仅在需要非默认路径时创建：
+
+```yaml
+plan_root: plans
 ```
 
-常见信号：
+示例自定义根目录：
 
-- `plans/NNN-<主题>.md` 或 `plans/NNN-*.md`
-- 「开计划」/「Plan 协议」/ §3.0 等章节
-- 明确禁止：以 host 临时 plan 模式作为主存储
-
-AGENTS 提到 `plans/` 但未指定其它路径时，默认根目录为 **`plans/`**。
-
-## plans/README.md
-
-若存在，plan 根目录为 README 所在目录（通常为 `plans/`）。
+```yaml
+plan_root: docs/plans
+```
 
 ## Claude Code
 
@@ -30,7 +35,7 @@ print(json.loads(p.read_text()).get('plansDirectory','')) if p.exists() else pri
 "
 ```
 
-相对路径以仓库根为基准。
+`plansDirectory` 与 `.plan-handoff.yaml` 同时存在时，**以 `.plan-handoff.yaml` 为准**。
 
 ## 已有 plan 活动
 
@@ -38,15 +43,14 @@ print(json.loads(p.read_text()).get('plansDirectory','')) if p.exists() else pri
 ls plans/[0-9]*.md plans/done/[0-9]*.md 2>/dev/null | head -3
 ```
 
-若已有文件，即使没有 AGENTS，根目录也为 `plans/`。
+若已有编号 plan 文件，根目录即为 `plans/`（或文件所在目录）。
 
-## 初始化阈值
+## Bootstrap 阈值
 
-**以下全部为假**时才初始化：
+以下**全部为假**时才初始化：
 
-- AGENTS.md 中有 plan 相关节
-- `plans/README.md` 存在
-- `plans/[0-9]*.md` 或 `plans/done/` 存在
+- `.plan-handoff.yaml` 存在且含 `plan_root`
 - `.claude/settings.json` 含 `plansDirectory`
+- `plans/[0-9]*.md` 或 `plans/done/` 存在
 
-初始化会创建 `plans/`、`plans/done/`、最小 `plans/README.md`，并可选合并 `.claude/settings.json`。
+初始化仅创建目录：`plans/`、`plans/done/`；可选写入默认 `.plan-handoff.yaml`。

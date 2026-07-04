@@ -8,7 +8,7 @@ Plan 模式是草稿区。Handoff（交接）是给下一个会话、agent 或�
 
 | 负责 | 不负责 |
 |------|--------|
-| 识别 / 初始化 `plans/`（或项目自定义 plan 根目录） | 撰写高质量实现 plan |
+| 识别 / 初始化 `plans/`（或 `.plan-handoff.yaml` 自定义根目录） | 撰写高质量实现 plan |
 | 代理 Cursor / Claude Code / Qoder plan 模式 → 仓库文件 | 拆 task、review lens、TDD |
 | 最小交接模板 | 依赖 `writing-plans`、`grilling` 等 |
 
