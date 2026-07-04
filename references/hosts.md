@@ -1,41 +1,41 @@
-# Host plan mode → handoff
+# 各 Host 的 plan 模式 → 交接落盘
 
-This skill treats host plan mode as **scratch**. The repo file is **handoff**.
+本 skill 把 host plan 模式视为**草稿**。仓库文件才是**交接**。
 
 ## Cursor
 
-| Action | How |
-|--------|-----|
-| Enter plan | CLI `--plan` / `--mode plan`; IDE Shift+Tab → Plan |
-| Temp storage | `~/.cursor/plans/` (UUID filenames) |
-| Handoff target | Project `plans/NNN-<topic>.md` (or detected root) |
+| 操作 | 方式 |
+|------|------|
+| 进入 plan | CLI `--plan` / `--mode plan`；IDE Shift+Tab → Plan |
+| 临时存储 | `~/.cursor/plans/`（UUID 文件名） |
+| 交接目标 | 项目内 `plans/NNN-<主题>.md`（或检测出的根目录） |
 
-**Agent rule:** Before switching Plan → Agent or ending session, write handoff file. If Cursor also wrote under `~/.cursor/plans/`, merge useful content into the repo file and do not treat the temp file as canonical.
+**Agent 规则：** 在 Plan → Agent 切换或结束会话前，必须写入交接文件。若 Cursor 同时在 `~/.cursor/plans/` 写了内容，将有价值部分合并进仓库文件，**不要**把临时文件当 canonical。
 
 ## Claude Code
 
-| Action | How |
-|--------|-----|
-| Enter plan | `--permission-mode plan`; tool EnterPlanMode |
-| Config | `.claude/settings.json` → `"plansDirectory": "./plans"` |
-| Handoff target | `plans/NNN-<topic>.md` with project numbering |
+| 操作 | 方式 |
+|------|------|
+| 进入 plan | `--permission-mode plan`；工具 EnterPlanMode |
+| 配置 | `.claude/settings.json` → `"plansDirectory": "./plans"` |
+| 交接目标 | 带项目编号的 `plans/NNN-<主题>.md` |
 
-**Agent rule:** `plansDirectory` routes Claude's plan files, but projects often require `NNN-` numbering and `plans/done/` archive. Prefer project convention from `AGENTS.md` over generic random names.
+**Agent 规则：** `plansDirectory` 会路由 Claude 的 plan 文件，但项目通常还要求 `NNN-` 编号和 `plans/done/` 归档。优先遵循 `AGENTS.md` 中的项目约定，而非随机文件名。
 
 ## Qoder
 
-| Action | How |
-|--------|-----|
-| Enter plan | `/plan` toggle |
-| Temp storage | Session / host-specific |
-| Handoff target | Project `plans/NNN-<topic>.md` |
+| 操作 | 方式 |
+|------|------|
+| 进入 plan | `/plan` 切换 |
+| 临时存储 | 会话 / host 特有路径 |
+| 交接目标 | 项目内 `plans/NNN-<主题>.md` |
 
-**Agent rule:** Same as Cursor — exit plan only after repo handoff exists.
+**Agent 规则：** 与 Cursor 相同——仓库交接文件存在前，不要退出 plan。
 
-## Other agents (Codex, OpenCode, Copilot, …)
+## 其它 agent（Codex、OpenCode、Copilot 等）
 
-If the host exposes a read-only or plan-like mode, same contract:
+若 host 提供只读或类 plan 模式，契约相同：
 
-1. Explore in host plan/scratch if available
-2. Write repo handoff file before implement mode
-3. Never leave handoff-only content in non-git paths
+1. 在 host plan/草稿区探索（若有）
+2. 进入实现模式前写入仓库交接文件
+3. 不要把仅用于交接的内容留在非 git 路径

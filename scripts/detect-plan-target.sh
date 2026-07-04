@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Detect plan handoff target in current repo. Prints env-style lines for agents.
+# 识别当前仓库的 plan 交接落盘目标。输出 env 风格行供 agent 解析。
 set -euo pipefail
 
 ROOT="${1:-.}"

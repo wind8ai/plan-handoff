@@ -1,24 +1,24 @@
-# Plan target detection markers
+# Plan 落盘目标识别标记
 
-Used by `scripts/detect-plan-target.sh` and manual fallback.
+供 `scripts/detect-plan-target.sh` 及手动 fallback 使用。
 
-## AGENTS.md patterns
+## AGENTS.md 模式
 
 ```bash
 grep -nE 'plans/NNN|开计划|写计划|Plan 协议|plan-handoff|plansDirectory' AGENTS.md 2>/dev/null
 ```
 
-Common signals:
+常见信号：
 
-- `plans/NNN-<主题>.md` or `plans/NNN-*.md`
-- § "开计划" / "Plan 协议" / §3.0
-- Explicit forbid: host temp plan mode as primary storage
+- `plans/NNN-<主题>.md` 或 `plans/NNN-*.md`
+- 「开计划」/「Plan 协议」/ §3.0 等章节
+- 明确禁止：以 host 临时 plan 模式作为主存储
 
-Default root when AGENTS mentions `plans/` but no alternate path: **`plans/`**
+AGENTS 提到 `plans/` 但未指定其它路径时，默认根目录为 **`plans/`**。
 
 ## plans/README.md
 
-If present, plan root is the directory containing README (usually `plans/`).
+若存在，plan 根目录为 README 所在目录（通常为 `plans/`）。
 
 ## Claude Code
 
@@ -30,23 +30,23 @@ print(json.loads(p.read_text()).get('plansDirectory','')) if p.exists() else pri
 "
 ```
 
-Relative paths are from repo root.
+相对路径以仓库根为基准。
 
-## Existing activity
+## 已有 plan 活动
 
 ```bash
 ls plans/[0-9]*.md plans/done/[0-9]*.md 2>/dev/null | head -3
 ```
 
-If files exist, root is `plans/` even without AGENTS.
+若已有文件，即使没有 AGENTS，根目录也为 `plans/`。
 
-## Bootstrap threshold
+## 初始化阈值
 
-Bootstrap when **all** are false:
+**以下全部为假**时才初始化：
 
-- AGENTS.md plan section
-- `plans/README.md`
-- `plans/[0-9]*.md` or `plans/done/`
-- `.claude/settings.json` with `plansDirectory`
+- AGENTS.md 中有 plan 相关节
+- `plans/README.md` 存在
+- `plans/[0-9]*.md` 或 `plans/done/` 存在
+- `.claude/settings.json` 含 `plansDirectory`
 
-Bootstrap creates `plans/`, `plans/done/`, minimal `plans/README.md`, optional `.claude/settings.json` merge.
+初始化会创建 `plans/`、`plans/done/`、最小 `plans/README.md`，并可选合并 `.claude/settings.json`。
