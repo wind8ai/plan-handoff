@@ -2,11 +2,11 @@
 name: plan-handoff
 description: >-
   将 coding agent 在 plan 模式下的结论从会话内存强制落盘到仓库内 git 可追踪 Markdown。
-  适用于 Qoder、Codex、Cursor、Claude Code 的 plan 交接落盘。
+  适用于 Qoder、Codex、Cursor、Claude Code 等的 plan 交接落盘。
   触发：写计划、开 plan、plan 一下、规划、落 plan、plan handoff、交接 plan；
   或 plan 仅留在 host 临时目录（~/.cursor/plans/、会话草稿）时。
   不负责撰写完整实现 plan，只负责落盘与带验证 Checklist 的交接模板。
-compatibility: 需 bash、git。支持 Qoder、Codex、Cursor、Claude Code。
+compatibility: 需 bash、git。支持 Qoder、Codex、Cursor、Claude Code 等具备 plan 模式的 coding agent。
 metadata:
   version: "0.0.1"
 ---
@@ -41,12 +41,12 @@ bash scripts/detect-plan-target.sh
 
 解析 `PLAN_ROOT`、`NEXT_PLAN_NUM`、`NEEDS_BOOTSTRAP`、`HANDOFF_PATTERN`。不要手写重复检测逻辑。
 
-检测优先级：`.plan-handoff.yaml` → 已有 `plans/[0-9]*.md` → bootstrap 默认 `plans/`。
+检测优先级：`.plan-handoff.yaml`（可选）→ 已有 `plans/[0-9]*.md` → bootstrap 默认 `plans/`。
 
-唯一配置源 `.plan-handoff.yaml`（可选）：
+`.plan-handoff.yaml` 为**可选项**，不写时使用默认值 `plan_root: plans`。仅在需要非默认路径时创建：
 
 ```yaml
-plan_root: plans
+plan_root: plans   # 默认值；可改为 docs/plans 等
 ```
 
 Claude Code 的 `plansDirectory` 请手动与 `plan_root` 对齐；脚本不读取该字段。
@@ -59,7 +59,7 @@ Claude Code 的 `plansDirectory` 请手动与 `plan_root` 对齐；脚本不读�
 mkdir -p plans
 ```
 
-可选写入 `.plan-handoff.yaml`，再运行检测脚本确认。
+可选写入 `.plan-handoff.yaml`（非默认路径时）；默认 `plan_root: plans` 可省略该文件。
 
 ### 3. Host plan 模式（可选）
 

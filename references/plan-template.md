@@ -6,7 +6,7 @@ handoff 写入时使用。`draft` 可只填前半；标 `approved` 前须补全�
 ---
 status: draft
 handoff: 2026-07-05
-host: Qoder
+host: Qoder   # Qoder、Codex、Cursor、Claude Code 等
 goal: <一句话目标>
 ---
 
