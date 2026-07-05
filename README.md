@@ -10,7 +10,7 @@ Plan 模式是草稿区。Handoff（交接）是给下一个会话、agent 或�
 |------|--------|
 | 识别 / 初始化 `plans/`（或 `.plan-handoff.yaml` 自定义根目录） | 撰写高质量实现 plan |
 | 代理 Cursor / Claude Code / Qoder plan 模式 → 仓库文件 | 拆 task、review lens、TDD |
-| 最小交接模板（frontmatter + 四段式） | 依赖 `writing-plans`、`grilling` 等 |
+| 最小交接模板（Task + Verification Checklist + checker 委派） | 依赖 `writing-plans`、`grilling` 等 |
 
 可与 [loop-engineering](https://github.com/wind8ai/loop-engineering-startup) 中的 skill 组合成 loop——**无相互 import**。
 
@@ -55,7 +55,7 @@ plan-handoff/
 plan_root: plans
 ```
 
-Plan 生命周期用 frontmatter `status: draft | approved | done` 管理，无需 `plans/done/` 子目录。`approved` 表示已拍板、可交付执行 agent。
+Plan 生命周期用 frontmatter `status: draft | approved | done` 管理。`approved` 要求每个 Task 带 Verification 检查表 + Plan 级 Checklist，可委派独立 checker agent 验收。
 
 ## 许可
 

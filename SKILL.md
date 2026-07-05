@@ -6,7 +6,7 @@ description: >-
   触发：写计划、开 plan、plan 一下、规划、落 plan、plan handoff、交接 plan；
   或 plan 仅留在 host 临时目录（~/.cursor/plans/、会话草稿）时。
   不负责写 plan、拆 task——可与 writing-plans、grilling、planning-and-task-breakdown 组合，无相互依赖。
-version: 0.3.1
+version: 0.4.0
 ---
 
 # Plan Handoff — Plan 交接落盘
@@ -17,7 +17,7 @@ Plan 模式用来想。**Handoff（交接）** 用来持久化——让下一个
 
 本 skill **不**决定 plan 质量、不拆 task、不做 review。那些交给其它 skill。本 skill 只保证 plan **落在磁盘上的正确位置**。
 
-深度 task 拆解或 ExecPlan 级规格，后续用 `writing-plans` 或项目 `PLANS.md` 扩写——本 skill 只产出**最小交接文档**。
+深度 task 拆解可参考 `writing-plans`（Right-Sized Task + 逐步验证）扩写——本 skill 提供**带验证 Checklist 的交接模板**，确保 `approved` 状态可交付执行 agent 与独立 checker agent。
 
 ## 何时使用
 
@@ -118,16 +118,23 @@ plan_root: plans
 
 ### 步骤 4 — 交接写入（必须）
 
-写入或更新目标文件。最小可交接模板：
+写入或更新目标文件。模板分两层：`draft` 可只填前半；标 `approved` 前必须补全 **任务 + 验证 Checklist**。
 
 ```markdown
 ---
 status: draft
 handoff: 2026-07-05
 host: Cursor
+goal: <一句话目标>
 ---
 
 # Plan NNN — <主题>
+
+> **For agents:** 执行用 `executing-plans`；每个 Task 完成后按 §验证 Checklist 自检，可委派独立 checker agent（见 §验证委派）。
+
+**Goal:** <与 frontmatter goal 一致>
+**Architecture:** <2-3 句方案概要>
+**不做:** <明确 out-of-scope，防 scope creep>
 
 ## 背景
 <为何需要此 plan——零上下文读者也能看懂>
@@ -138,35 +145,102 @@ host: Cursor
 ## 待决问题
 <未决事项，或写「无」>
 
+## 任务
+
+每个 Task 须 **Right-Sized**（参考 writing-plans）：一个可独立验收的交付单元，自带完成检查，而非笼统步骤。
+
+### Task 1: <组件或交付单元名>
+
+**Files:**
+- Create: `path/to/new.ts`
+- Modify: `path/to/existing.ts`
+- Test: `path/to/test.ts`
+
+**Steps:**
+- [ ] Step 1: <具体动作>
+- [ ] Step 2: <具体动作>
+
+**Verification（Task 完成检查 — 必填）:**
+
+| # | 检查项 | 命令 / 动作 | 期望结果 | 执行者 |
+|---|--------|-------------|----------|--------|
+| 1 | 单元测试 | `npm test -- path/to/test.ts` | PASS | 执行 agent |
+| 2 | 类型检查 | `tsc --noEmit` | 无错误 | 执行 agent |
+| 3 | 行为验收 | <具体手动步骤> | <可观察结果> | checker agent |
+
+> Verification 禁止写「跑一下测试」「确保没问题」等模糊项——须给出**确切命令或动作 + 期望输出**。
+
+### Task 2: <下一交付单元>
+...
+
+## 验证 Checklist（Plan 级 — `approved` 必填）
+
+全部 Task 完成后、改 `status: done` 之前执行：
+
+- [ ] 每个 Task 的 Verification 表已全部通过
+- [ ] 端到端 / 集成验证：`<命令>` → 期望：`<结果>`
+- [ ] 对照 **不做** 清单，确认无 scope creep
+- [ ] 关键路径已 commit，工作区干净（或符合项目约定）
+
+## 验证委派（Checker Agent — 可选）
+
+当验证需要**独立于执行 agent** 时（maker-checker），按此契约委派：
+
+| 字段 | 约定 |
+|------|------|
+| 触发时机 | 每个 Task 完成后 / 全部 Task 完成后 |
+| Checker 输入 | 本 plan 文件路径 + Task 编号（或 `all`） |
+| Checker 职责 | **只读验证**：逐项执行 Verification 表与 Plan 级 Checklist，勾选结果；**不改代码** |
+| Checker 输出 | 验证报告：通过项 / 失败项 / 阻塞项 |
+| 失败处理 | 退回执行 agent 修复；严重偏差则 `approved` → `draft` 并更新 plan |
+
+Checker 可以是：新会话 agent、子 agent、或项目内 `code-review` / 自定义验证 skill——由用户在 loop 中配置，本 skill 不 import。
+
 ## 下一步
-<执行者应做的第一件事——至少一行>
+<执行 agent 第一件事；通常为 Task 1 Step 1>
 ```
+
+**格式要点（参考 writing-plans / Right-Sized Task）：**
+
+| 要素 | 要求 |
+|------|------|
+| Task 粒度 | 一个 Task = 一个可独立验收的交付单元（含 Files + Steps + Verification） |
+| Steps | 用 `- [ ]` checkbox，执行 agent 逐项勾选 |
+| Verification | **每个 Task 必填**验证表；禁止 TBD /「后续补」 |
+| Plan 级 Checklist | `approved` 前必须有；表达跨 Task 的整体验收 |
+| Checker 委派 | 验证表「执行者」列标明 `执行 agent` 或 `checker agent` |
 
 **生命周期：** 用 frontmatter `status` 管理，**不要**搬移文件：
 
-| status | 含义 | 典型时机 |
+| status | 含义 | 模板要求 |
 |--------|------|----------|
-| `draft` | 规划中，可继续编辑 | plan 模式探索中；待决问题未清零 |
-| `approved` | **已拍板，可交付执行** | 决策已定、待决问题为「无」或已解决；用户确认可以开始实现 |
-| `done` | 执行已完成 | 实现 agent 完工后 |
+| `draft` | 规划中，可继续编辑 | 背景 / 决策 / 待决可先行；任务与验证可骨架化 |
+| `approved` | **已拍板，可交付执行** | **每个 Task 须有 Verification 表；须有 Plan 级 Checklist** |
+| `done` | 执行与验证已完成 | Plan 级 Checklist 全部勾选；Verification 已通过 |
 
 状态流转：
 
 ```
 draft → approved → done
   ↑         │
-  └─────────┘  （执行前发现需改 plan，退回 draft）
+  └─────────┘  （验证失败或方案变更，退回 draft）
 ```
 
-**何时标 `approved`：** plan 模式结束且用户认可方案时，handoff 直接写 `status: approved`；若仍需迭代，保持 `draft`，待用户确认后再改。
+**何时标 `approved`：** 待决问题为「无」或已解决；每个 Task 的 Verification 已写全（无 TBD）；用户确认可开始实现。
 
-**执行 agent 契约：** 只接手 `status: approved` 的 plan。读到 `draft` 时停止执行，提示用户先完成 plan 或拍板。
+**执行 agent 契约：** 只接手 `status: approved` 的 plan；按 Task → Steps → Verification 顺序执行；Verification 失败时停止并报告，不猜测。
 
-执行完成后把 `status: approved` 改为 `status: done`。若仓库已有 `plans/done/` 旧结构，可保留但不新建。
+**Checker agent 契约：** 只读；输入为 plan 路径 + Task 范围；输出验证报告；不修改代码或 plan（除非用户要求退回 `draft`）。
 
-**内容策略：** 从 plan 模式整理粘贴即可。深度 task 拆解**可选**——若用户需要，后续再用 `writing-plans` / `planning-and-task-breakdown`。
+执行与验证全部通过后，把 `status: approved` 改为 `status: done`。
 
-**更新已有 plan：** 编辑同一 `plans/NNN-*.md`；更新 frontmatter `handoff` 日期或追加简短变更记录。
+**内容策略：**
+
+- plan 模式 handoff：先落盘 `draft`，填入背景 / 决策 / 任务骨架
+- 需要更细步骤时：用 `writing-plans` 扩写 Task / Steps，**但 Verification 表仍须在本文件内**
+- 标 `approved` 前：自查 Verification 无模糊项、Plan 级 Checklist 已就绪
+
+**更新已有 plan：** 编辑同一 `plans/NNN-*.md`；更新 frontmatter `handoff` 日期；执行中勾选 Steps / Checklist checkbox。
 
 ### 步骤 5 — 验证交接
 
@@ -183,8 +257,10 @@ git status -- plans/
 - [ ] 关键内容不在 chat 或 `~/.cursor/plans/` 中独有
 - [ ] 含 `status` frontmatter
 - [ ] 文内路径为仓库相对路径（无 `/Users/...`）
+- [ ] 若 `status: approved`：每个 Task 有 Verification 表，且有 Plan 级 Checklist
+- [ ] Verification 无 TBD / 模糊项（须含确切命令或动作 + 期望结果）
 
-告知用户：**交接路径**、**plan 编号**、**当前 status**（`draft` 可继续改，`approved` 可交给执行 agent），以及现在 commit 还是继续编辑。
+告知用户：**交接路径**、**plan 编号**、**当前 status**（`draft` 可继续改，`approved` 可交给执行 agent），以及验证是否委派 checker agent。
 
 ## 组合使用（可选，非必须）
 
@@ -193,9 +269,10 @@ git status -- plans/
 | plan 模式前 | `grilling`、`brainstorming` | 对齐范围 |
 | plan 模式 | *（host 原生）* | 探索 |
 | **交接落盘** | **`plan-handoff`** | **写入仓库** |
-| handoff 后 | `writing-plans`、`planning-and-task-breakdown` | 扩写 task / 提升质量 |
-| 拍板 | *（用户确认）* | `draft` → `approved` |
-| 执行 | `executing-plans`、项目 loop | 读取 `approved` plan 并实现 |
+| handoff 后 | `writing-plans`、`planning-and-task-breakdown` | 扩写 Task / Steps（Verification 仍留本文件） |
+| 拍板 | *（用户确认）* | `draft` → `approved`（补全 Verification + Plan 级 Checklist） |
+| 执行 | `executing-plans`、项目 loop | 按 Task 执行 Steps，跑 Verification |
+| 验证 | checker agent / `code-review` 等 | 独立验收 Verification 表与 Plan 级 Checklist |
 
 ## 反模式
 
@@ -209,6 +286,10 @@ git status -- plans/
 | 完成 plan 后搬到 `done/` 目录 | 改 frontmatter `status: done` |
 | 对 `draft` plan 直接开干 | 先拍板为 `approved`，或回到 plan 模式补全 |
 | handoff 时标 `approved` 但待决问题未清 | 保持 `draft`，列出待决项 |
+| `approved` 但 Task 无 Verification 表 | 补全验证项再拍板 |
+| Verification 写「跑测试」「检查一下」 | 改为确切命令 + 期望输出 |
+| 执行 agent 自验自批 | 关键项委派 checker agent（maker-checker） |
+| Checker agent 边验边改代码 | Checker 只读；修复交回执行 agent |
 
 ## 速查
 
