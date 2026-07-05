@@ -10,13 +10,13 @@ Agent Skill：把 coding agent plan 模式输出落盘为 git 可追踪的仓库
 
 ```bash
 # Qoder、Cursor 等
-ln -sfn /path/to/plan-handoff .agents/skills/plan-handoff
+ln -sfn <本仓库路径> .agents/skills/plan-handoff
 
 # Codex
-ln -sfn /path/to/plan-handoff .codex/skills/plan-handoff
+ln -sfn <本仓库路径> .codex/skills/plan-handoff
 
 # Claude Code
-ln -sfn /path/to/plan-handoff .claude/skills/plan-handoff
+ln -sfn <本仓库路径> .claude/skills/plan-handoff
 ```
 
 ## 结构

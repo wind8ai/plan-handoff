@@ -46,7 +46,7 @@ bash scripts/detect-plan-target.sh
 `.plan-handoff.yaml` 为**可选项**，不写时使用默认值 `plan_root: plans`。仅在需要非默认路径时创建：
 
 ```yaml
-plan_root: plans   # 默认值；可改为 docs/plans 等
+plan_root: <目录>   # 默认 plans
 ```
 
 Claude Code 的 `plansDirectory` 请手动与 `plan_root` 对齐；脚本不读取该字段。
@@ -56,7 +56,7 @@ Claude Code 的 `plansDirectory` 请手动与 `plan_root` 对齐；脚本不读�
 ### 2. 初始化（`NEEDS_BOOTSTRAP=1` 时）
 
 ```bash
-mkdir -p plans
+mkdir -p <PLAN_ROOT>
 ```
 
 可选写入 `.plan-handoff.yaml`（非默认路径时）；默认 `plan_root: plans` 可省略该文件。
@@ -80,8 +80,8 @@ mkdir -p plans
 ### 5. 验证交接
 
 ```bash
-test -f plans/NNN-*.md
-git status -- plans/
+test -f <PLAN_ROOT>/<NNN>-<主题>.md   # 使用检测脚本给出的确切路径
+git status -- <PLAN_ROOT>/
 ```
 
 确认：文件在 git 可追踪路径；含 `status` frontmatter；关键内容不在 host 临时目录独有；`approved` 时 Verification 与 Plan 级 Checklist 齐全且无模糊项。
@@ -92,7 +92,7 @@ git status -- plans/
 
 | 气味 | 修正 |
 |------|------|
-| plan 只在 chat / host 临时目录 | 立即写 `plans/NNN-*.md` |
+| plan 只在 chat / host 临时目录 | 立即写 `<PLAN_ROOT>/<NNN>-<主题>.md` |
 | 「下轮再写 plan」 | 同轮 handoff |
 | `draft` 直接开干 | 先拍板为 `approved` |
 | `approved` 无 Verification 表 | 补全再拍板 |
@@ -105,5 +105,5 @@ git status -- plans/
 
 ```bash
 bash scripts/detect-plan-target.sh
-git status -- plans/
+git status -- <PLAN_ROOT>/
 ```

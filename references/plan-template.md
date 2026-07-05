@@ -2,15 +2,17 @@
 
 handoff 写入时使用。`draft` 可只填前半；标 `approved` 前须补全任务与验证 Checklist。
 
+下列 `<…>` 为占位符，写入时替换为实际值。
+
 ```markdown
 ---
 status: draft
-handoff: 2026-07-05
-host: Qoder   # Qoder、Codex、Cursor、Claude Code 等
+handoff: <YYYY-MM-DD>
+host: <Qoder|Codex|Cursor|Claude Code|…>
 goal: <一句话目标>
 ---
 
-# Plan NNN — <主题>
+# Plan <NNN> — <主题>
 
 > **For agents:** 读取 `status: approved` 的 plan，按 Task 执行 Steps 与 Verification；可委派独立 checker agent（见 §验证委派）。
 
@@ -31,12 +33,12 @@ goal: <一句话目标>
 
 每个 Task 须适度颗粒度：一个可独立验收的交付单元，自带完成检查。
 
-### Task 1: <组件或交付单元名>
+### Task <N>: <组件或交付单元名>
 
 **Files:**
-- Create: `path/to/new.ts`
-- Modify: `path/to/existing.ts`
-- Test: `path/to/test.ts`
+- Create: `<path/to/new>`
+- Modify: `<path/to/existing>`
+- Test: `<path/to/test>`
 
 **Steps:**
 - [ ] Step 1: <具体动作>
@@ -46,13 +48,13 @@ goal: <一句话目标>
 
 | # | 检查项 | 命令 / 动作 | 期望结果 | 执行者 |
 |---|--------|-------------|----------|--------|
-| 1 | 单元测试 | `npm test -- path/to/test.ts` | PASS | 执行 agent |
-| 2 | 类型检查 | `tsc --noEmit` | 无错误 | 执行 agent |
-| 3 | 行为验收 | <具体手动步骤> | <可观察结果> | checker agent |
+| 1 | <检查项名> | `<命令或动作>` | <期望结果> | 执行 agent |
+| 2 | <检查项名> | `<命令或动作>` | <期望结果> | 执行 agent |
+| 3 | <检查项名> | `<命令或动作>` | <期望结果> | checker agent |
 
 > Verification 禁止模糊项——须给出确切命令或动作 + 期望输出。
 
-### Task 2: <下一交付单元>
+### Task <N+1>: <下一交付单元>
 ...
 
 ## 验证 Checklist（Plan 级 — `approved` 必填）
