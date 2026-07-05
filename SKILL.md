@@ -5,8 +5,8 @@ description: >-
   自动识别或初始化 plan 目录（.plan-handoff.yaml、plans/）。
   触发：写计划、开 plan、plan 一下、规划、落 plan、plan handoff、交接 plan；
   或 plan 仅留在 host 临时目录（~/.cursor/plans/、会话草稿）时。
-  不负责写 plan、拆 task——可与 writing-plans、grilling、planning-and-task-breakdown 组合，无相互依赖。
-version: 0.4.0
+  不负责撰写完整实现 plan 或拆 task，只负责交接落盘与验证模板。
+version: 0.4.1
 ---
 
 # Plan Handoff — Plan 交接落盘
@@ -15,9 +15,7 @@ version: 0.4.0
 
 Plan 模式用来想。**Handoff（交接）** 用来持久化——让下一个会话、另一个 agent 或人类接手时，不必重新推导上下文。
 
-本 skill **不**决定 plan 质量、不拆 task、不做 review。那些交给其它 skill。本 skill 只保证 plan **落在磁盘上的正确位置**。
-
-深度 task 拆解可参考 `writing-plans`（Right-Sized Task + 逐步验证）扩写——本 skill 提供**带验证 Checklist 的交接模板**，确保 `approved` 状态可交付执行 agent 与独立 checker agent。
+本 skill 只保证 plan **落在磁盘上的正确位置**，并提供**带验证 Checklist 的交接模板**，确保 `approved` 状态可交付执行 agent 与独立 checker agent。
 
 ## 何时使用
 
@@ -31,7 +29,7 @@ Plan 模式用来想。**Handoff（交接）** 用来持久化——让下一个
 **不要使用于：**
 
 - 执行已有 plan（查找 `status: approved` 的 `plans/NNN-*.md` 并实现；`draft` 须先拍板）
-- 无 plan 模式阶段、从零写完整实现 plan（用 `writing-plans` 或项目 SDD skill）
+- 无 plan 探索阶段、仅需直接改代码的场景
 - 单行 typo 等无需 plan 文件的改动
 
 ## 硬约束
@@ -42,8 +40,7 @@ Plan 模式用来想。**Handoff（交接）** 用来持久化——让下一个
    - `~/.claude/plans/`（随机文件名）
    - 项目 git 树外的任何路径
 3. **必须**在切回 agent/实现模式或结束前，在识别出的 plan 根目录下写入（或更新）文件。
-4. **禁止** import 或依赖其它 skill。仅可选组合（例如 handoff 前加载 `grilling`，之后加载 `writing-plans`——由用户决定）。
-5. 若用了 plan 模式做探索，**必须**把结论写入仓库文件——不要让用户从 chat 复制粘贴。
+4. 若用了 plan 模式做探索，**必须**把结论写入仓库文件——不要让用户从 chat 复制粘贴。
 
 ## 流程
 
@@ -109,10 +106,10 @@ plan_root: plans
 
 | Host | 进入 plan | 临时存储（仅草稿） |
 |------|-----------|-------------------|
+| Qoder | `/plan` 切换 | 会话 / host 临时 |
+| Codex | plan 模式（CLI / App） | 会话 / host 临时 |
 | Cursor | `--plan`、`--mode plan`、Shift+Tab Plan | `~/.cursor/plans/`（UUID 文件名） |
 | Claude Code | `--permission-mode plan`、EnterPlanMode | 经 `plansDirectory` 路由——仍须 `NNN-*.md` 命名 |
-| Qoder | `/plan` 切换 | 会话 / host 临时 |
-| Copilot / 其它 | host 类 plan / 只读探索模式 | host 默认路径（如 `.copilot/plans/`） |
 
 **Agent 规则：** 在 Plan → Agent 切换或结束会话前，必须写入交接文件。若 host 同时在临时目录写了内容，将有价值部分合并进仓库文件，**不要**把临时文件当 canonical。
 
@@ -124,13 +121,13 @@ plan_root: plans
 ---
 status: draft
 handoff: 2026-07-05
-host: Cursor
+host: Qoder
 goal: <一句话目标>
 ---
 
 # Plan NNN — <主题>
 
-> **For agents:** 执行用 `executing-plans`；每个 Task 完成后按 §验证 Checklist 自检，可委派独立 checker agent（见 §验证委派）。
+> **For agents:** 读取 `status: approved` 的 plan，按 Task 执行 Steps 与 Verification；可委派独立 checker agent（见 §验证委派）。
 
 **Goal:** <与 frontmatter goal 一致>
 **Architecture:** <2-3 句方案概要>
@@ -147,7 +144,7 @@ goal: <一句话目标>
 
 ## 任务
 
-每个 Task 须 **Right-Sized**（参考 writing-plans）：一个可独立验收的交付单元，自带完成检查，而非笼统步骤。
+每个 Task 须 **适度颗粒度**：一个可独立验收的交付单元，自带完成检查，而非笼统步骤。
 
 ### Task 1: <组件或交付单元名>
 
@@ -194,13 +191,13 @@ goal: <一句话目标>
 | Checker 输出 | 验证报告：通过项 / 失败项 / 阻塞项 |
 | 失败处理 | 退回执行 agent 修复；严重偏差则 `approved` → `draft` 并更新 plan |
 
-Checker 可以是：新会话 agent、子 agent、或项目内 `code-review` / 自定义验证 skill——由用户在 loop 中配置，本 skill 不 import。
+Checker 可以是新会话 agent、子 agent、或独立验证 agent——由用户配置。
 
 ## 下一步
 <执行 agent 第一件事；通常为 Task 1 Step 1>
 ```
 
-**格式要点（参考 writing-plans / Right-Sized Task）：**
+**格式要点：**
 
 | 要素 | 要求 |
 |------|------|
@@ -237,8 +234,7 @@ draft → approved → done
 **内容策略：**
 
 - plan 模式 handoff：先落盘 `draft`，填入背景 / 决策 / 任务骨架
-- 需要更细步骤时：用 `writing-plans` 扩写 Task / Steps，**但 Verification 表仍须在本文件内**
-- 标 `approved` 前：自查 Verification 无模糊项、Plan 级 Checklist 已就绪
+- 标 `approved` 前：补全 Task Steps 与 Verification，确保无模糊项、Plan 级 Checklist 已就绪
 
 **更新已有 plan：** 编辑同一 `plans/NNN-*.md`；更新 frontmatter `handoff` 日期；执行中勾选 Steps / Checklist checkbox。
 
@@ -254,7 +250,7 @@ git status -- plans/
 确认：
 
 - [ ] 文件存在于 git 可追踪的 plan 根目录下
-- [ ] 关键内容不在 chat 或 `~/.cursor/plans/` 中独有
+- [ ] 关键内容不在 chat 或 host 临时目录中独有
 - [ ] 含 `status` frontmatter
 - [ ] 文内路径为仓库相对路径（无 `/Users/...`）
 - [ ] 若 `status: approved`：每个 Task 有 Verification 表，且有 Plan 级 Checklist
@@ -262,27 +258,25 @@ git status -- plans/
 
 告知用户：**交接路径**、**plan 编号**、**当前 status**（`draft` 可继续改，`approved` 可交给执行 agent），以及验证是否委派 checker agent。
 
-## 组合使用（可选，非必须）
+## 工作流
 
-| 阶段 | 示例 skill | 作用 |
-|------|------------|------|
-| plan 模式前 | `grilling`、`brainstorming` | 对齐范围 |
-| plan 模式 | *（host 原生）* | 探索 |
-| **交接落盘** | **`plan-handoff`** | **写入仓库** |
-| handoff 后 | `writing-plans`、`planning-and-task-breakdown` | 扩写 Task / Steps（Verification 仍留本文件） |
-| 拍板 | *（用户确认）* | `draft` → `approved`（补全 Verification + Plan 级 Checklist） |
-| 执行 | `executing-plans`、项目 loop | 按 Task 执行 Steps，跑 Verification |
-| 验证 | checker agent / `code-review` 等 | 独立验收 Verification 表与 Plan 级 Checklist |
+| 阶段 | 动作 |
+|------|------|
+| 探索 | host plan 模式（Qoder / Codex / Cursor / Claude Code） |
+| 落盘 | 写入 `plans/NNN-*.md`，`status: draft` |
+| 拍板 | 补全 Verification + Plan 级 Checklist → `status: approved` |
+| 执行 | 执行 agent 按 Task 完成 Steps 与 Verification |
+| 验证 | checker agent 独立验收（可选） |
+| 归档 | 全部通过后 `status: done` |
 
 ## 反模式
 
 | 气味 | 修正 |
 |------|------|
 | 长 plan 只在 chat 里 | 立即写 `plans/NNN-*.md` |
-| 文件只在 `~/.cursor/plans/` | 合并到仓库路径并验证 |
+| 文件只在 host 临时目录 | 合并到仓库路径并验证 |
 | 「下轮再写 plan」 | handoff 与 plan 结论同轮完成 |
 | 任务小就跳过 handoff | 单段 handoff 可以；跳过不行 |
-| 在本 skill 内加载 writing-plans | skill 保持独立；由用户组 loop |
 | 完成 plan 后搬到 `done/` 目录 | 改 frontmatter `status: done` |
 | 对 `draft` plan 直接开干 | 先拍板为 `approved`，或回到 plan 模式补全 |
 | handoff 时标 `approved` 但待决问题未清 | 保持 `draft`，列出待决项 |
