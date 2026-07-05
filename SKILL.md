@@ -2,11 +2,11 @@
 name: plan-handoff
 description: >-
   将 coding agent 在 plan 模式下的结论从会话内存强制落盘到仓库内 git 可追踪文件。
-  自动识别或初始化 plan 目录（.plan-handoff.yaml、plans/、Claude plansDirectory）。
+  自动识别或初始化 plan 目录（.plan-handoff.yaml、plans/）。
   触发：写计划、开 plan、plan 一下、规划、落 plan、plan handoff、交接 plan；
   或 plan 仅留在 host 临时目录（~/.cursor/plans/、会话草稿）时。
   不负责写 plan、拆 task——可与 writing-plans、grilling、planning-and-task-breakdown 组合，无相互依赖。
-version: 0.2.0
+version: 0.3.0
 ---
 
 # Plan Handoff — Plan 交接落盘
@@ -16,6 +16,8 @@ version: 0.2.0
 Plan 模式用来想。**Handoff（交接）** 用来持久化——让下一个会话、另一个 agent 或人类接手时，不必重新推导上下文。
 
 本 skill **不**决定 plan 质量、不拆 task、不做 review。那些交给其它 skill。本 skill 只保证 plan **落在磁盘上的正确位置**。
+
+深度 task 拆解或 ExecPlan 级规格，后续用 `writing-plans` 或项目 `PLANS.md` 扩写——本 skill 只产出**最小交接文档**。
 
 ## 何时使用
 
@@ -47,41 +49,50 @@ Plan 模式用来想。**Handoff（交接）** 用来持久化——让下一个
 
 ### 步骤 1 — 识别 plan 落盘目标
 
-运行检测（或手动读标记）：
+运行检测脚本，解析其输出（不要手写重复逻辑）：
 
 ```bash
 bash scripts/detect-plan-target.sh
 ```
 
-按优先级读取，直到确定 plan 根目录：
+输出字段：
+
+| 字段 | 含义 |
+|------|------|
+| `PLAN_ROOT` | plan 根目录 |
+| `PLAN_SOURCE` | 检测依据 |
+| `NEXT_PLAN_NUM` | 下一个三位编号 |
+| `NEEDS_BOOTSTRAP` | `1` 表示需初始化 |
+| `HANDOFF_PATTERN` | 文件名模式 |
+
+**检测优先级：**
 
 | 优先级 | 标记 | Plan 根目录 |
 |--------|------|-------------|
 | 1 | `.plan-handoff.yaml` → `plan_root` | 配置值（默认 `plans`） |
-| 2 | `.claude/settings.json` → `plansDirectory` | 相对仓库根的路径 |
-| 3 | 已有 `plans/[0-9]*.md` 或 `plans/done/` | `plans/` |
-| 4 | 无任何标记 | **初始化**（步骤 2）后使用 `plans/` |
+| 2 | 已有 `plans/[0-9]*.md` | `plans/` |
+| 3 | 无任何标记 | **初始化**（步骤 2）后使用 `plans/` |
 
-详见 [references/config-markers.md](references/config-markers.md)。
+**配置（唯一配置源）：** 仅在需要非默认路径时创建 `.plan-handoff.yaml`：
 
-**文件名约定：**
-
-- 进行中：`<plan_root>/NNN-<kebab-主题>.md`（三位递增编号）
-- 已完成：`<plan_root>/done/NNN-<kebab-主题>.md`
-
-取下一个编号：
-
-```bash
-ls plans/done/ plans/[0-9]*.md 2>/dev/null | grep -oE '[0-9]{3}' | sort -n | tail -1
-# 末号 +1，补零至 3 位；若无则从 001 起
+```yaml
+plan_root: plans
 ```
+
+示例自定义根目录：
+
+```yaml
+plan_root: docs/plans
+```
+
+**Claude Code 用户：** 若使用 `.claude/settings.json` 的 `plansDirectory`，请手动与 `plan_root` 对齐（例如 `"plansDirectory": "./plans"`）。检测脚本**不**读取该字段。
+
+**文件名约定：** `<plan_root>/NNN-<kebab-主题>.md`（三位递增编号，由脚本给出 `NEXT_PLAN_NUM`）。
 
 ### 步骤 2 — 初始化（仅当 `NEEDS_BOOTSTRAP=1`）
 
-创建最小目录结构：
-
 ```bash
-mkdir -p plans/done
+mkdir -p plans
 ```
 
 可选写入 `.plan-handoff.yaml`（非默认路径时推荐）：
@@ -90,38 +101,33 @@ mkdir -p plans/done
 plan_root: plans
 ```
 
-若本仓使用 Claude Code，在 `.claude/settings.json` 中新增或合并：
-
-```json
-{
-  "plansDirectory": "./plans"
-}
-```
-
 重新运行 `detect-plan-target.sh`，确认 `PLAN_ROOT=plans`。
 
 ### 步骤 3 — Host plan 模式（可选草稿区）
 
-需要探索时，可使用 host 原生 plan 模式。详见 [references/hosts.md](references/hosts.md)。
+需要探索时，可使用 host 原生 plan 模式。Host 差异见下表；**规则相同**：host 临时区是草稿，仓库文件是交接。
 
 | Host | 进入 plan | 临时存储（仅草稿） |
 |------|-----------|-------------------|
-| Cursor | `--plan`、`--mode plan`、Shift+Tab Plan | `~/.cursor/plans/` |
+| Cursor | `--plan`、`--mode plan`、Shift+Tab Plan | `~/.cursor/plans/`（UUID 文件名） |
 | Claude Code | `--permission-mode plan`、EnterPlanMode | 经 `plansDirectory` 路由——仍须 `NNN-*.md` 命名 |
 | Qoder | `/plan` 切换 | 会话 / host 临时 |
+| Copilot / 其它 | host 类 plan / 只读探索模式 | host 默认路径（如 `.copilot/plans/`） |
 
-**在 plan 模式中：** 自由记录。**退出前：** 所有影响交接的决策必须进入仓库文件。
+**Agent 规则：** 在 Plan → Agent 切换或结束会话前，必须写入交接文件。若 host 同时在临时目录写了内容，将有价值部分合并进仓库文件，**不要**把临时文件当 canonical。
 
 ### 步骤 4 — 交接写入（必须）
 
 写入或更新目标文件。最小可交接模板：
 
 ```markdown
-# Plan NNN — <主题>
+---
+status: draft
+handoff: 2026-07-05
+host: Cursor
+---
 
-> Status: 📋 Draft
-> Handoff: <ISO 日期> via plan-handoff
-> Host: Cursor | Claude Code | Qoder | 其他
+# Plan NNN — <主题>
 
 ## 背景
 <为何需要此 plan——零上下文读者也能看懂>
@@ -136,16 +142,25 @@ plan_root: plans
 <执行者应做的第一件事——至少一行>
 ```
 
+**生命周期：** 用 frontmatter `status` 管理，**不要**搬移文件：
+
+| status | 含义 |
+|--------|------|
+| `draft` | 进行中，可继续编辑 |
+| `done` | 已完成，保留原位供 git 历史追踪 |
+
+完成时把 `status: draft` 改为 `status: done` 即可。若仓库已有 `plans/done/` 旧结构，可保留但不新建。
+
 **内容策略：** 从 plan 模式整理粘贴即可。深度 task 拆解**可选**——若用户需要，后续再用 `writing-plans` / `planning-and-task-breakdown`。
 
-**更新已有 plan：** 编辑同一 `plans/NNN-*.md`；在背景段追加 `> Handoff:` 行或简短变更记录。
+**更新已有 plan：** 编辑同一 `plans/NNN-*.md`；更新 frontmatter `handoff` 日期或追加简短变更记录。
 
 ### 步骤 5 — 验证交接
 
 离开 plan 模式或结束本轮前：
 
 ```bash
-test -f plans/NNN-*.md   # 或检测脚本给出的确切路径
+test -f plans/NNN-*.md   # 使用检测脚本给出的确切路径
 git status -- plans/
 ```
 
@@ -153,7 +168,7 @@ git status -- plans/
 
 - [ ] 文件存在于 git 可追踪的 plan 根目录下
 - [ ] 关键内容不在 chat 或 `~/.cursor/plans/` 中独有
-- [ ] 含 Status 行
+- [ ] 含 `status` frontmatter
 - [ ] 文内路径为仓库相对路径（无 `/Users/...`）
 
 告知用户：**交接路径**、**plan 编号**、以及现在 commit 还是继续编辑。
@@ -177,16 +192,11 @@ git status -- plans/
 | 「下轮再写 plan」 | handoff 与 plan 结论同轮完成 |
 | 任务小就跳过 handoff | 单段 handoff 可以；跳过不行 |
 | 在本 skill 内加载 writing-plans | skill 保持独立；由用户组 loop |
+| 完成 plan 后搬到 `done/` 目录 | 改 frontmatter `status: done` |
 
 ## 速查
 
 ```bash
-# 识别
 bash scripts/detect-plan-target.sh
-
-# 下一个 plan 编号
-ls plans/done/ plans/[0-9]*.md 2>/dev/null | grep -oE '[0-9]{3}' | sort -n | tail -1
-
-# 验证
 git status -- plans/
 ```
