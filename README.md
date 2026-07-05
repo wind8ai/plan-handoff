@@ -55,7 +55,7 @@ plan-handoff/
 plan_root: plans
 ```
 
-Plan 生命周期用 frontmatter `status: draft | done` 管理，无需 `plans/done/` 子目录。
+Plan 生命周期用 frontmatter `status: draft | approved | done` 管理，无需 `plans/done/` 子目录。`approved` 表示已拍板、可交付执行 agent。
 
 ## 许可
 

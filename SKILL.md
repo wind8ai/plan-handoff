@@ -6,7 +6,7 @@ description: >-
   触发：写计划、开 plan、plan 一下、规划、落 plan、plan handoff、交接 plan；
   或 plan 仅留在 host 临时目录（~/.cursor/plans/、会话草稿）时。
   不负责写 plan、拆 task——可与 writing-plans、grilling、planning-and-task-breakdown 组合，无相互依赖。
-version: 0.3.0
+version: 0.3.1
 ---
 
 # Plan Handoff — Plan 交接落盘
@@ -30,7 +30,7 @@ Plan 模式用来想。**Handoff（交接）** 用来持久化——让下一个
 
 **不要使用于：**
 
-- 执行已有 plan（直接 Read `plans/NNN-*.md` 并实现）
+- 执行已有 plan（查找 `status: approved` 的 `plans/NNN-*.md` 并实现；`draft` 须先拍板）
 - 无 plan 模式阶段、从零写完整实现 plan（用 `writing-plans` 或项目 SDD skill）
 - 单行 typo 等无需 plan 文件的改动
 
@@ -144,12 +144,25 @@ host: Cursor
 
 **生命周期：** 用 frontmatter `status` 管理，**不要**搬移文件：
 
-| status | 含义 |
-|--------|------|
-| `draft` | 进行中，可继续编辑 |
-| `done` | 已完成，保留原位供 git 历史追踪 |
+| status | 含义 | 典型时机 |
+|--------|------|----------|
+| `draft` | 规划中，可继续编辑 | plan 模式探索中；待决问题未清零 |
+| `approved` | **已拍板，可交付执行** | 决策已定、待决问题为「无」或已解决；用户确认可以开始实现 |
+| `done` | 执行已完成 | 实现 agent 完工后 |
 
-完成时把 `status: draft` 改为 `status: done` 即可。若仓库已有 `plans/done/` 旧结构，可保留但不新建。
+状态流转：
+
+```
+draft → approved → done
+  ↑         │
+  └─────────┘  （执行前发现需改 plan，退回 draft）
+```
+
+**何时标 `approved`：** plan 模式结束且用户认可方案时，handoff 直接写 `status: approved`；若仍需迭代，保持 `draft`，待用户确认后再改。
+
+**执行 agent 契约：** 只接手 `status: approved` 的 plan。读到 `draft` 时停止执行，提示用户先完成 plan 或拍板。
+
+执行完成后把 `status: approved` 改为 `status: done`。若仓库已有 `plans/done/` 旧结构，可保留但不新建。
 
 **内容策略：** 从 plan 模式整理粘贴即可。深度 task 拆解**可选**——若用户需要，后续再用 `writing-plans` / `planning-and-task-breakdown`。
 
@@ -171,7 +184,7 @@ git status -- plans/
 - [ ] 含 `status` frontmatter
 - [ ] 文内路径为仓库相对路径（无 `/Users/...`）
 
-告知用户：**交接路径**、**plan 编号**、以及现在 commit 还是继续编辑。
+告知用户：**交接路径**、**plan 编号**、**当前 status**（`draft` 可继续改，`approved` 可交给执行 agent），以及现在 commit 还是继续编辑。
 
 ## 组合使用（可选，非必须）
 
@@ -181,7 +194,8 @@ git status -- plans/
 | plan 模式 | *（host 原生）* | 探索 |
 | **交接落盘** | **`plan-handoff`** | **写入仓库** |
 | handoff 后 | `writing-plans`、`planning-and-task-breakdown` | 扩写 task / 提升质量 |
-| 执行 | `executing-plans`、项目 loop | 实现 |
+| 拍板 | *（用户确认）* | `draft` → `approved` |
+| 执行 | `executing-plans`、项目 loop | 读取 `approved` plan 并实现 |
 
 ## 反模式
 
@@ -193,6 +207,8 @@ git status -- plans/
 | 任务小就跳过 handoff | 单段 handoff 可以；跳过不行 |
 | 在本 skill 内加载 writing-plans | skill 保持独立；由用户组 loop |
 | 完成 plan 后搬到 `done/` 目录 | 改 frontmatter `status: done` |
+| 对 `draft` plan 直接开干 | 先拍板为 `approved`，或回到 plan 模式补全 |
+| handoff 时标 `approved` 但待决问题未清 | 保持 `draft`，列出待决项 |
 
 ## 速查
 
