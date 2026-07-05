@@ -8,30 +8,22 @@ Plan 模式是草稿区。Handoff（交接）是给下一个会话、agent 或�
 
 | 负责 | 不负责 |
 |------|--------|
-| 识别 / 初始化 `plans/`（或 `.plan-handoff.yaml` 自定义根目录） | 撰写高质量实现 plan |
-| 代理 Cursor / Claude Code / Qoder plan 模式 → 仓库文件 | 拆 task、review lens、TDD |
-| 最小交接模板 | 依赖 `writing-plans`、`grilling` 等 |
-
-可与 [loop-engineering](https://github.com/wind8ai/loop-engineering-startup) 中的 skill 组合成 loop——**无相互 import**。
+| 识别 / 初始化 `plans/`（或 `.plan-handoff.yaml` 自定义根目录） | 撰写完整实现 plan |
+| 代理 Qoder / Codex / Cursor / Claude Code plan 模式 → 仓库文件 | 拆 task、review、TDD |
+| 交接模板（Task + Verification Checklist + checker 委派） | — |
 
 ## 安装
 
 **单仓库（软链或复制）：**
 
 ```bash
-# Cursor / 跨 agent
+# 跨 agent（Cursor 等）
 mkdir -p .agents/skills
 ln -sfn /path/to/plan-handoff .agents/skills/plan-handoff
 
 # Claude Code
 mkdir -p .claude/skills
 ln -sfn /path/to/plan-handoff .claude/skills/plan-handoff
-```
-
-**通过 loop-engineering mono repo：**
-
-```bash
-./scripts/link-skills.sh --target /path/to/project --skills plan-handoff --claude
 ```
 
 ## 触发词
@@ -43,12 +35,19 @@ ln -sfn /path/to/plan-handoff .claude/skills/plan-handoff
 ```
 plan-handoff/
 ├── SKILL.md
-├── references/
-│   ├── hosts.md
-│   └── config-markers.md
 └── scripts/
     └── detect-plan-target.sh
 ```
+
+## 配置
+
+唯一配置源：`.plan-handoff.yaml`（可选）
+
+```yaml
+plan_root: plans
+```
+
+Plan 生命周期用 frontmatter `status: draft | approved | done` 管理。`approved` 要求每个 Task 带 Verification 检查表 + Plan 级 Checklist，可委派独立 checker agent 验收。
 
 ## 许可
 
