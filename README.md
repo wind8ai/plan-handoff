@@ -25,5 +25,7 @@ ln -sfn <本仓库路径> .claude/skills/plan-handoff
 plan-handoff/
 ├── SKILL.md
 ├── references/
-└── scripts/detect-plan-target.sh
+└── scripts/
+    ├── detect-plan-target.sh
+    └── validate-plan.sh
 ```

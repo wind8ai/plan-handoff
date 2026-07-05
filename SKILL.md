@@ -41,7 +41,9 @@ bash scripts/detect-plan-target.sh
 
 解析 `PLAN_ROOT`、`NEXT_PLAN_NUM`、`NEEDS_BOOTSTRAP`、`HANDOFF_PATTERN`。不要手写重复检测逻辑。
 
-检测优先级：`.plan-handoff.yaml`（可选）→ 已有 `plans/[0-9]*.md` → bootstrap 默认 `plans/`。
+检测优先级：`.plan-handoff.yaml`（可选）→ 已有 `plans/[0-9]*.md` → `.claude/settings.json` 的 `plansDirectory`（Claude host 信号）→ bootstrap 默认 `plans/`。
+
+解析额外字段：`CLAUDE_PLANS_DIR`、`PLANS_DIR_MISMATCH`（与 `PLAN_ROOT` 不一致时为 `1`）。
 
 `.plan-handoff.yaml` 为**可选项**，不写时使用默认值 `plan_root: plans`。仅在需要非默认路径时创建：
 
@@ -49,7 +51,7 @@ bash scripts/detect-plan-target.sh
 plan_root: <目录>   # 默认 plans
 ```
 
-Claude Code 的 `plansDirectory` 请手动与 `plan_root` 对齐；脚本不读取该字段。
+`.plan-handoff.yaml` 与 Claude `plansDirectory` 冲突时，**以 yaml 为准**。脚本仍会输出 `CLAUDE_PLANS_DIR` 供对齐检查。
 
 文件名：`<plan_root>/NNN-<kebab-主题>.md`。
 
@@ -80,11 +82,11 @@ mkdir -p <PLAN_ROOT>
 ### 5. 验证交接
 
 ```bash
-test -f <PLAN_ROOT>/<NNN>-<主题>.md   # 使用检测脚本给出的确切路径
+bash scripts/validate-plan.sh <PLAN_ROOT>/<NNN>-<主题>.md
 git status -- <PLAN_ROOT>/
 ```
 
-确认：文件在 git 可追踪路径；含 `status` frontmatter；关键内容不在 host 临时目录独有；`approved` 时 Verification 与 Plan 级 Checklist 齐全且无模糊项。
+`validate-plan.sh` 检查文件名、`status` frontmatter、`approved`/`done` 时的 Verification 与 Plan 级 Checklist，以及模糊验证用语。`PLANS_DIR_MISMATCH=1` 时输出 warning，不阻断 `draft` 通过。
 
 告知用户：交接路径、plan 编号、当前 status、是否委派 checker agent。
 
@@ -105,5 +107,6 @@ git status -- <PLAN_ROOT>/
 
 ```bash
 bash scripts/detect-plan-target.sh
+bash scripts/validate-plan.sh <PLAN_ROOT>/<NNN>-<主题>.md
 git status -- <PLAN_ROOT>/
 ```
