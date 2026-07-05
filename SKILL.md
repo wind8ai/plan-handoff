@@ -6,7 +6,7 @@ description: >-
   触发：写计划、开 plan、plan 一下、规划、落 plan、plan handoff、交接 plan；
   或 plan 仅留在 host 临时目录（~/.cursor/plans/、会话草稿）时。
   不负责撰写完整实现 plan 或拆 task，只负责交接落盘与验证模板。
-version: 0.4.1
+version: 0.0.1
 ---
 
 # Plan Handoff — Plan 交接落盘
